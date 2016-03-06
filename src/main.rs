@@ -44,6 +44,7 @@ impl Game {
 
                         can_exist.push(n);
                     }
+                    println!("{:?}", can_exist);
 
                     if can_exist.len() == 1 {
                         self.update(r, c, can_exist[0]);
@@ -186,7 +187,7 @@ mod tests {
     }
 
     #[test]
-    fn solving() {
+    fn solving_easy() {
         // Puzzle: http://www.puzzles.ca/sudoku_puzzles/sudoku_easy_245.html
         // Solution: http://www.puzzles.ca/sudoku_puzzles/sudoku_easy_245_solution.html
 
@@ -237,4 +238,40 @@ mod tests {
             assert!(n.eq(&expectation[i]))
         }
     }
+
+    #[test]
+    fn solving_hard() {
+        // Puzzle: http://www.puzzles.ca/sudoku_puzzles/sudoku_hard_243.html
+        // Solution: http://www.puzzles.ca/sudoku_puzzles/sudoku_hard_243_solution.html
+        let mut numbers = [None; 81];
+        numbers[1]  = Some(2);
+        numbers[2]  = Some(5);
+        numbers[7]  = Some(6);
+        numbers[9]  = Some(1);
+        numbers[15] = Some(7);
+        numbers[16] = Some(9);
+        numbers[18] = Some(4);
+        numbers[23] = Some(1);
+        numbers[29] = Some(9);
+        numbers[33] = Some(6);
+        numbers[34] = Some(8);
+        numbers[41] = Some(9);
+        numbers[43] = Some(5);
+        numbers[46] = Some(1);
+        numbers[48] = Some(7);
+        numbers[50] = Some(3);
+        numbers[54] = Some(8);
+        numbers[59] = Some(5);
+        numbers[66] = Some(8);
+        numbers[67] = Some(7);
+        numbers[69] = Some(5);
+        numbers[71] = Some(2);
+        numbers[75] = Some(7);
+        numbers[76] = Some(2);
+        let mut game = Game::new(numbers);
+        println!("");
+        println!("{:?}", game);
+        assert!(game.solve());
+    }
 }
+
