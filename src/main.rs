@@ -17,18 +17,20 @@ impl Game {
     fn solve(&mut self) -> bool {
         loop {
             let mut did_mutate = false;
+            let mut can_exist: Vec<u8> = Vec::with_capacity(9);
             for r in 0..9 {
                 for c in 0..9 {
+                    can_exist.drain(..);
                     if self.get(r, c).is_some() {
                         continue
                     }
                     let s = ((r / 3) * 3) + (c / 3);
 
+                    // TODO: cache result of row/column/square calculation
                     let row = self.row(r);
                     let column = self.column(c);
                     let square = self.square(s);
 
-                    let mut can_exist: Vec<u8> = Vec::new();
                     for n in 1..10 {
                         if exists(&row, n) {
                             continue;
@@ -185,7 +187,9 @@ mod tests {
 
     #[test]
     fn solving() {
-        // http://www.puzzles.ca/sudoku_puzzles/sudoku_easy_245.html
+        // Puzzle: http://www.puzzles.ca/sudoku_puzzles/sudoku_easy_245.html
+        // Solution: http://www.puzzles.ca/sudoku_puzzles/sudoku_easy_245_solution.html
+
         let mut numbers = [None; 81];
         numbers[2]  = Some(2);
         numbers[11] = Some(5);
