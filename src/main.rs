@@ -14,48 +14,75 @@ impl Game {
         }
     }
 
-    fn solve(&mut self) -> bool {
-        loop {
-            let mut did_mutate = false;
-            let mut can_exist: Vec<u8> = Vec::with_capacity(9);
-            for r in 0..9 {
-                for c in 0..9 {
-                    can_exist.drain(..);
-                    if self.get(r, c).is_some() {
-                        continue
-                    }
-                    let s = ((r / 3) * 3) + (c / 3);
+    // Iterate over every blank square and determine possible values
+    fn possible_values(&self, index: u8) -> [bool; 9] {
+        let (r, c, s) = Game::indices_from_index(index);
 
-                    // TODO: cache result of row/column/square calculation
-                    let row = self.row(r);
-                    let column = self.column(c);
-                    let square = self.square(s);
+        if let Some(val) = self.get(r, c) {
+            let mut vals = [false; 9];
+            vals[(val - 1) as usize] = true;
+            return vals;
+        }
 
-                    for n in 1..10 {
-                        if exists(&row, n) {
-                            continue;
-                        }
-                        if exists(&column, n) {
-                            continue;
-                        }
-                        if exists(&square, n) {
-                            continue;
-                        }
+        let mut vals = [true; 9];
 
-                        can_exist.push(n);
-                    }
+        let row = self.row(r);
+        let column = self.column(c);
+        let square = self.square(s);
 
-                    if can_exist.len() == 1 {
-                        self.update(r, c, can_exist[0]);
-                        did_mutate = true;
-                    }
-                }
-            }
 
-            if !did_mutate {
-                return self.numbers.iter().all(|&n| n.is_some());
+        for &row_value in row.iter() {
+            if let Some(i) = row_value {
+                vals[(i - 1) as usize] = false;
             }
         }
+
+        for &coll_value in column.iter() {
+            if let Some(i) = coll_value {
+                vals[(i - 1) as usize] = false;
+            }
+        }
+
+        for &square_value in square.iter() {
+            if let Some(i) = square_value {
+                vals[(i - 1) as usize] = false;
+            }
+        }
+
+        vals
+    }
+
+    fn indices_from_index(index: u8) -> (u8, u8, u8) {
+        let r = index / 9;
+        let c = index % 9;
+        let s = ((r / 3) * 3) + (c / 3);
+
+        (r, c, s)
+    }
+
+    fn solve(&mut self) -> bool {
+        self.check(0)
+    }
+
+    fn check(&mut self, index: u8) -> bool {
+        if index > 80 {
+            return true;
+        }
+
+        let (r, c, _) = Game::indices_from_index(index);
+        let original: Option<u8> = self.get(r, c);
+
+        for (i, is_possible) in self.possible_values(index).iter().enumerate() {
+            if *is_possible {
+                self.update(r, c, Some((i + 1) as u8));
+                if self.check(index + 1) {
+                    return true;
+                }
+            }
+        }
+
+        self.update(r, c, original);
+        false
     }
 
     fn get(&self, row_index: u8, column_index: u8) -> Option<u8> {
@@ -63,14 +90,14 @@ impl Game {
         self.numbers[index]
     }
 
-    fn update(&mut self, row_index: u8, column_index: u8, value: u8) {
+    fn update(&mut self, row_index: u8, column_index: u8, value: Option<u8>) {
         let index = ((row_index * 9) + column_index) as usize;
-        self.numbers[index] = Some(value);
+        self.numbers[index] = value;
     }
 
 
-    fn row(&self, index: u8) -> [Option<u8>; 9] {
-        let start = (index * 9) as usize;
+    fn row(&self, row_index: u8) -> [Option<u8>; 9] {
+        let start = (row_index * 9) as usize;
         let end = start + 9;
 
         let mut coll = [None; 9];
@@ -79,11 +106,11 @@ impl Game {
         coll
     }
 
-    fn column(&self, index: u8) -> [Option<u8>; 9] {
+    fn column(&self, coll_index: u8) -> [Option<u8>; 9] {
         let mut coll = [None; 9];
 
         for i in 0..9usize {
-            let j = (i * 9) + (index as usize);
+            let j = (i * 9) + (coll_index as usize);
             coll[i] = self.numbers[j];
         }
 
@@ -133,16 +160,6 @@ impl fmt::Debug for Game {
     }
 }
 
-fn exists<T: std::cmp::PartialEq + Copy>(collection: &[Option<T>], test: T) -> bool {
-    for member in collection {
-        if member.eq(&Some(test)) {
-            return true
-        }
-    }
-    false
-}
-
-
 #[cfg(test)]
 mod tests {
     use super::Game;
@@ -186,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn solving() {
+    fn solving_easy() {
         // Puzzle: http://www.puzzles.ca/sudoku_puzzles/sudoku_easy_245.html
         // Solution: http://www.puzzles.ca/sudoku_puzzles/sudoku_easy_245_solution.html
 
@@ -236,5 +253,41 @@ mod tests {
         for (i,n) in game.numbers.iter().enumerate() {
             assert!(n.eq(&expectation[i]))
         }
+    }
+
+    #[test]
+    fn solving_hard() {
+        // Puzzle: http://www.puzzles.ca/sudoku_puzzles/sudoku_hard_243.html
+        // Solution: http://www.puzzles.ca/sudoku_puzzles/sudoku_hard_243_solution.html
+        let mut numbers = [None; 81];
+        numbers[1]  = Some(2);
+        numbers[2]  = Some(5);
+        numbers[7]  = Some(6);
+        numbers[9]  = Some(1);
+        numbers[15] = Some(7);
+        numbers[16] = Some(9);
+        numbers[18] = Some(4);
+        numbers[23] = Some(1);
+        numbers[29] = Some(9);
+        numbers[33] = Some(6);
+        numbers[34] = Some(8);
+        numbers[41] = Some(9);
+        numbers[43] = Some(5);
+        numbers[46] = Some(1);
+        numbers[48] = Some(7);
+        numbers[50] = Some(3);
+        numbers[54] = Some(8);
+        numbers[59] = Some(5);
+        numbers[66] = Some(8);
+        numbers[67] = Some(7);
+        numbers[69] = Some(5);
+        numbers[71] = Some(2);
+        numbers[74] = Some(7);
+        numbers[75] = Some(2);
+        let mut game = Game::new(numbers);
+        println!("");
+        let is_solved = game.solve();
+        println!("{:?}", game);
+        assert!(is_solved);
     }
 }
