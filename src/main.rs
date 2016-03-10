@@ -1,7 +1,20 @@
 use std::fmt;
+use std::env;
 
 fn main() {
+    let game_string = env::args().nth(1).expect("Must call program with game in string form");
+    match Game::parse(&game_string) {
+        Some(mut game) => {
+            println!("Before:");
+            println!("{:?}", game);
+            game.solve();
+            println!("After:");
+            println!("{:?}", game);
+        }
+        None => println!("The puzzle failed to parse. Please give a valid puzzle")
+    }
 }
+
 
 struct Game {
     numbers: [Option<u8>; 81]
@@ -14,22 +27,67 @@ impl Game {
         }
     }
 
-    // Iterate over every blank square and determine possible values
-    fn possible_values(&self, index: u8) -> [bool; 9] {
-        let (r, c, s) = Game::indices_from_index(index);
+    fn parse(string: &str) -> Option<Game> {
+        if string.len() != 81 {
+            return None
+        }
 
-        if let Some(val) = self.get(r, c) {
+        let mut numbers = [None; 81];
+        for (i, c) in string.chars().enumerate() {
+            if c != '*' {
+                match c.to_digit(10) {
+                    Some(n) if n > 0 && n <= 9 => numbers[i] = Some(n as u8),
+                    Some(_) => return None,
+                    None => return None
+                }
+            }
+        }
+
+        Some(Game::new(numbers))
+    }
+
+    fn solve(&mut self) -> bool {
+        self.check(0)
+    }
+
+    fn check(&mut self, index: u8) -> bool {
+        if index > 80 {
+            return true;
+        }
+
+        let original = self.numbers[index as usize];
+
+        for (i, is_possible) in self.possible_values(index).iter().enumerate() {
+            if *is_possible {
+                let value  = (i + 1) as u8;
+                self.numbers[index as usize] = Some(value);
+                if self.check(index + 1) {
+                    return true;
+                }
+            }
+        }
+
+        self.numbers[index as usize] = original;
+        false
+    }
+
+    // Returns an array of size 9 where the if the value at index i is true then i
+    // is a possible value
+    fn possible_values(&self, index: u8) -> [bool; 9] {
+        if let Some(val) = self.numbers[index as usize] {
             let mut vals = [false; 9];
             vals[(val - 1) as usize] = true;
             return vals;
         }
 
+        let row_index = index / 9;
+        let column_index = index % 9;
+        let square_index = ((row_index / 3) * 3) + (column_index / 3);
         let mut vals = [true; 9];
 
-        let row = self.row(r);
-        let column = self.column(c);
-        let square = self.square(s);
-
+        let row = self.row(row_index);
+        let column = self.column(column_index);
+        let square = self.square(square_index);
 
         for &row_value in row.iter() {
             if let Some(i) = row_value {
@@ -51,50 +109,6 @@ impl Game {
 
         vals
     }
-
-    fn indices_from_index(index: u8) -> (u8, u8, u8) {
-        let r = index / 9;
-        let c = index % 9;
-        let s = ((r / 3) * 3) + (c / 3);
-
-        (r, c, s)
-    }
-
-    fn solve(&mut self) -> bool {
-        self.check(0)
-    }
-
-    fn check(&mut self, index: u8) -> bool {
-        if index > 80 {
-            return true;
-        }
-
-        let (r, c, _) = Game::indices_from_index(index);
-        let original: Option<u8> = self.get(r, c);
-
-        for (i, is_possible) in self.possible_values(index).iter().enumerate() {
-            if *is_possible {
-                self.update(r, c, Some((i + 1) as u8));
-                if self.check(index + 1) {
-                    return true;
-                }
-            }
-        }
-
-        self.update(r, c, original);
-        false
-    }
-
-    fn get(&self, row_index: u8, column_index: u8) -> Option<u8> {
-        let index = ((row_index * 9) + column_index) as usize;
-        self.numbers[index]
-    }
-
-    fn update(&mut self, row_index: u8, column_index: u8, value: Option<u8>) {
-        let index = ((row_index * 9) + column_index) as usize;
-        self.numbers[index] = value;
-    }
-
 
     fn row(&self, row_index: u8) -> [Option<u8>; 9] {
         let start = (row_index * 9) as usize;
@@ -163,6 +177,49 @@ impl fmt::Debug for Game {
 #[cfg(test)]
 mod tests {
     use super::Game;
+
+    #[test]
+    fn test_successful_parsing() {
+        let test = "***********1*******8********7***************************************************9";
+
+        let game = Game::parse(test).unwrap();
+
+        assert!(game.numbers[11] == Some(1));
+        assert!(game.numbers[19] == Some(8));
+        assert!(game.numbers[28] == Some(7));
+        assert!(game.numbers[80] == Some(9));
+    }
+
+    #[test]
+    fn test_parsing_with_wrong_number_of_chars() {
+        let test1 = "***********1*******8********7***************************************************";
+        assert!(test1.len() == 80);
+
+        assert!(Game::parse(test1).is_none());
+
+        let test2 = "***********1*******8********7*****************************************************";
+        assert!(test2.len() == 82);
+
+        assert!(Game::parse(test2).is_none());
+    }
+
+    #[test]
+    fn test_parsing_with_wrong_chars() {
+        let with_zero = "***********0*******8********7****************************************************";
+        assert!(with_zero.len() == 81);
+
+        assert!(Game::parse(with_zero).is_none());
+
+        let with_letter = "***********a*******8********7****************************************************";
+        assert!(with_letter.len() == 81);
+
+        assert!(Game::parse(with_letter).is_none());
+
+        let with_space = "*********** *******8********7****************************************************";
+        assert!(with_space.len() == 81);
+
+        assert!(Game::parse(with_space).is_none());
+    }
 
     #[test]
     fn row_indexing() {
@@ -234,8 +291,8 @@ mod tests {
         numbers[75] = Some(3);
         numbers[76] = Some(4);
         numbers[77] = Some(6);
-        let mut game = Game::new(numbers);
 
+        let mut game = Game::new(numbers);
 
         let expectation = [
             Some(6), Some(1), Some(2), Some(7), Some(9), Some(3), Some(8), Some(5), Some(4),
@@ -248,7 +305,8 @@ mod tests {
             Some(1), Some(7), Some(3), Some(2), Some(5), Some(9), Some(6), Some(4), Some(8),
             Some(2), Some(9), Some(8), Some(3), Some(4), Some(6), Some(7), Some(1), Some(5)
         ];
-        assert!(game.solve() == true);
+
+        assert!(game.solve());
 
         for (i,n) in game.numbers.iter().enumerate() {
             assert!(n.eq(&expectation[i]))
@@ -284,10 +342,25 @@ mod tests {
         numbers[71] = Some(2);
         numbers[74] = Some(7);
         numbers[75] = Some(2);
+
         let mut game = Game::new(numbers);
-        println!("");
-        let is_solved = game.solve();
-        println!("{:?}", game);
-        assert!(is_solved);
+
+        let expectation = [
+            Some(9), Some(2), Some(5), Some(3), Some(4), Some(7), Some(1), Some(6), Some(8),
+            Some(1), Some(6), Some(3), Some(5), Some(2), Some(8), Some(7), Some(9), Some(4),
+            Some(4), Some(7), Some(8), Some(9), Some(6), Some(1), Some(2), Some(3), Some(5),
+            Some(7), Some(3), Some(9), Some(4), Some(5), Some(2), Some(6), Some(8), Some(1),
+            Some(2), Some(8), Some(4), Some(6), Some(1), Some(9), Some(3), Some(5), Some(7),
+            Some(5), Some(1), Some(6), Some(7), Some(8), Some(3), Some(4), Some(2), Some(9),
+            Some(8), Some(4), Some(2), Some(1), Some(3), Some(5), Some(9), Some(7), Some(6),
+            Some(3), Some(9), Some(1), Some(8), Some(7), Some(6), Some(5), Some(4), Some(2),
+            Some(6), Some(5), Some(7), Some(2), Some(9), Some(4), Some(8), Some(1), Some(3)
+        ];
+
+        assert!(game.solve());
+
+        for (i,n) in game.numbers.iter().enumerate() {
+            assert!(n.eq(&expectation[i]))
+        }
     }
 }
