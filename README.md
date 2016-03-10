@@ -2,8 +2,7 @@
 
 A simple Sudoku solver written in Rust.
 
-The algorithm for solving puzzles is very naive, but it works - at least for
-simple puzzles.
+Theoretically this solver should be able to solve any "solvable" puzzle.
 
 ## Run
 
