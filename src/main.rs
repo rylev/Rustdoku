@@ -1,5 +1,9 @@
+extern crate rand;
+
 use std::fmt;
 use std::env;
+
+use rand::prelude::*;
 
 fn main() {
     let game_string = env::args().nth(1).expect("Must call program with game in string form");
@@ -16,6 +20,7 @@ fn main() {
 }
 
 
+#[derive(Clone)]
 struct Game {
     numbers: [Option<u8>; 81]
 }
@@ -24,6 +29,37 @@ impl Game {
     fn new(numbers: [Option<u8>; 81]) -> Game {
         Game {
             numbers: numbers
+        }
+    }
+
+    fn full() -> Game {
+        let numbers: [Option<u8>; 81] = [None; 81];
+        let mut game = Game::new(numbers);
+        game.solve();
+        game
+    }
+
+    fn empty(&mut self, cell_count: u8) {
+        let mut rng = thread_rng();
+
+        for _ in 0..cell_count {
+            let mut tries = 0;
+            loop {
+                let index = rng.gen_range(0, 81);
+                let mut clone1 = self.clone();
+                let mut clone2 = self.clone();
+                if let Some(original) = self.numbers[index] {
+                    clone1.numbers[index] = None;
+                    clone2.numbers[index] = None;
+                    if !clone1.solve_with_condition((index as u8, original)) && clone2.solve() {
+                        self.numbers[index] = None;
+                        break;
+                    } else {
+                        tries += 1;
+                        if tries > 100 { break; }
+                    }
+                }
+            }
         }
     }
 
@@ -47,23 +83,38 @@ impl Game {
     }
 
     fn solve(&mut self) -> bool {
-        self.check(0)
+        self.check(0, None)
     }
 
-    fn check(&mut self, index: u8) -> bool {
-        if index > 80 {
-            return true;
-        }
+    fn solve_with_condition(&mut self, forbidden: (u8, u8)) -> bool {
+        self.check(0, Some(forbidden))
+    }
+
+    fn check(&mut self, index: u8, forbidden: Option<(u8, u8)>) -> bool {
+        if index > 80 { return true; }
+
+        let mut rng = thread_rng();
 
         let original = self.numbers[index as usize];
+        let mut possible_values = self.possible_values(index);
+        loop {
+            if possible_values.iter().all(|&v| v == false) { break; }
+            let i = rng.gen_range(0, 9);
+            let is_possible = possible_values[i];
+            let value = (i + 1) as u8;
+            let is_not_forbidden = match forbidden {
+                None => true,
+                Some((forbidden_index, forbidden_value)) => !(index == forbidden_index && value == forbidden_value)
+            };
 
-        for (i, is_possible) in self.possible_values(index).iter().enumerate() {
-            if *is_possible {
-                let value  = (i + 1) as u8;
-                self.numbers[index as usize] = Some(value);
-                if self.check(index + 1) {
-                    return true;
+            if is_possible {
+                if is_not_forbidden {
+                    self.numbers[index as usize] = Some(value);
+                    if self.check(index + 1, forbidden) {
+                        return true;
+                    }
                 }
+                possible_values[i] = false;
             }
         }
 
@@ -71,7 +122,7 @@ impl Game {
         false
     }
 
-    // Returns an array of size 9 where the if the value at index i is true then i
+    // Returns an array of size 9 where if the value at index i is true then i
     // is a possible value
     fn possible_values(&self, index: u8) -> [bool; 9] {
         if let Some(val) = self.numbers[index as usize] {
@@ -154,20 +205,16 @@ impl Game {
 impl fmt::Debug for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (i, num) in self.numbers.iter().enumerate() {
-            let display = if let Some(digit) = *num {
-                format!("{}", digit)
+            if let &Some(digit) = num {
+                write!(f, "{}", digit)?;
             } else {
-                String::from("*")
-            };
+                write!(f, "*")?;
+            }
 
-            let result = if !((i + 1) % 9 == 0) {
-                write!(f, "{} ", display)
+            if !((i + 1) % 9 == 0) {
+                write!(f, " ")?;
             } else {
-                write!(f, "{}\n", display)
-            };
-
-            if result.is_err() {
-                return result;
+                write!(f, "\n")?;
             }
         }
         Ok(())
@@ -362,5 +409,37 @@ mod tests {
         for (i,n) in game.numbers.iter().enumerate() {
             assert!(n.eq(&expectation[i]))
         }
+    }
+
+    #[test]
+    fn generating_a_board() {
+        let game = Game::full();
+
+        for n in game.numbers.iter() {
+            assert!(n.is_some())
+        }
+    }
+
+    #[test]
+    fn generating_a_board_with_5_removed() {
+        let mut game = Game::full();
+        game.empty(20);
+        let mut count = 0;
+        for n in game.numbers.iter() {
+            if n.is_none() {
+                count += 1;
+            }
+        }
+
+        assert_eq!(count, 20);
+        // for n in 1..10 {
+        //     println!("--{}", n);
+        //     for _ in 0..50 {
+        //         let mut game = Game::full();
+        //         let instant = std::time::Instant::now();
+        //         game.empty(n);
+        //         println!("{:?}", instant.elapsed());
+        //     }
+        // }
     }
 }
