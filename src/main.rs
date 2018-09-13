@@ -1,5 +1,9 @@
+extern crate rand;
+
 use std::fmt;
 use std::env;
+
+use rand::prelude::*;
 
 fn main() {
     let game_string = env::args().nth(1).expect("Must call program with game in string form");
@@ -27,6 +31,16 @@ impl Game {
         }
     }
 
+    fn full() -> Game {
+        let numbers: [Option<u8>; 81] = [None; 81];
+        let mut game = Game::new(numbers);
+        game.solve();
+        game
+    }
+
+    fn empty(&mut self, cell_count: u8) {
+    }
+
     fn parse(string: &str) -> Option<Game> {
         if string.len() != 81 {
             return None
@@ -51,18 +65,24 @@ impl Game {
     }
 
     fn check(&mut self, index: u8) -> bool {
+        let mut rng = thread_rng();
         if index > 80 {
             return true;
         }
 
         let original = self.numbers[index as usize];
+        let mut possible_values = self.possible_values(index);
+        loop {
+            if possible_values.iter().all(|&v| v == false) { break; }
+            let i = rng.gen_range(0, 9);
+            let is_possible = possible_values[i];
 
-        for (i, is_possible) in self.possible_values(index).iter().enumerate() {
-            if *is_possible {
-                let value  = (i + 1) as u8;
-                self.numbers[index as usize] = Some(value);
+            if is_possible {
+                self.numbers[index as usize] = Some((i + 1) as u8);
                 if self.check(index + 1) {
                     return true;
+                } else {
+                    possible_values[i] = false;
                 }
             }
         }
@@ -71,7 +91,7 @@ impl Game {
         false
     }
 
-    // Returns an array of size 9 where the if the value at index i is true then i
+    // Returns an array of size 9 where if the value at index i is true then i
     // is a possible value
     fn possible_values(&self, index: u8) -> [bool; 9] {
         if let Some(val) = self.numbers[index as usize] {
@@ -154,20 +174,16 @@ impl Game {
 impl fmt::Debug for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (i, num) in self.numbers.iter().enumerate() {
-            let display = if let Some(digit) = *num {
-                format!("{}", digit)
+            if let &Some(digit) = num {
+                write!(f, "{}", digit)?;
             } else {
-                String::from("*")
-            };
+                write!(f, "*")?;
+            }
 
-            let result = if !((i + 1) % 9 == 0) {
-                write!(f, "{} ", display)
+            if !((i + 1) % 9 == 0) {
+                write!(f, " ")?;
             } else {
-                write!(f, "{}\n", display)
-            };
-
-            if result.is_err() {
-                return result;
+                write!(f, "\n")?;
             }
         }
         Ok(())
@@ -361,6 +377,15 @@ mod tests {
 
         for (i,n) in game.numbers.iter().enumerate() {
             assert!(n.eq(&expectation[i]))
+        }
+    }
+
+    #[test]
+    fn generating_a_board() {
+        let game = Game::full();
+
+        for n in game.numbers.iter() {
+            assert!(n.is_some())
         }
     }
 }
