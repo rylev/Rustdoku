@@ -20,6 +20,7 @@ fn main() {
 }
 
 
+#[derive(Clone)]
 struct Game {
     numbers: [Option<u8>; 81]
 }
@@ -39,6 +40,27 @@ impl Game {
     }
 
     fn empty(&mut self, cell_count: u8) {
+        let mut rng = thread_rng();
+
+        for _ in 0..cell_count {
+            let mut tries = 0;
+            loop {
+                let index = rng.gen_range(0, 81);
+                let mut clone1 = self.clone();
+                let mut clone2 = self.clone();
+                if let Some(original) = self.numbers[index] {
+                    clone1.numbers[index] = None;
+                    clone2.numbers[index] = None;
+                    if !clone1.solve_with_condition((index as u8, original)) && clone2.solve() {
+                        self.numbers[index] = None;
+                        break;
+                    } else {
+                        tries += 1;
+                        if tries > 100 { break; }
+                    }
+                }
+            }
+        }
     }
 
     fn parse(string: &str) -> Option<Game> {
@@ -61,14 +83,17 @@ impl Game {
     }
 
     fn solve(&mut self) -> bool {
-        self.check(0)
+        self.check(0, None)
     }
 
-    fn check(&mut self, index: u8) -> bool {
+    fn solve_with_condition(&mut self, forbidden: (u8, u8)) -> bool {
+        self.check(0, Some(forbidden))
+    }
+
+    fn check(&mut self, index: u8, forbidden: Option<(u8, u8)>) -> bool {
+        if index > 80 { return true; }
+
         let mut rng = thread_rng();
-        if index > 80 {
-            return true;
-        }
 
         let original = self.numbers[index as usize];
         let mut possible_values = self.possible_values(index);
@@ -76,14 +101,20 @@ impl Game {
             if possible_values.iter().all(|&v| v == false) { break; }
             let i = rng.gen_range(0, 9);
             let is_possible = possible_values[i];
+            let value = (i + 1) as u8;
+            let is_not_forbidden = match forbidden {
+                None => true,
+                Some((forbidden_index, forbidden_value)) => !(index == forbidden_index && value == forbidden_value)
+            };
 
             if is_possible {
-                self.numbers[index as usize] = Some((i + 1) as u8);
-                if self.check(index + 1) {
-                    return true;
-                } else {
-                    possible_values[i] = false;
+                if is_not_forbidden {
+                    self.numbers[index as usize] = Some(value);
+                    if self.check(index + 1, forbidden) {
+                        return true;
+                    }
                 }
+                possible_values[i] = false;
             }
         }
 
@@ -387,5 +418,28 @@ mod tests {
         for n in game.numbers.iter() {
             assert!(n.is_some())
         }
+    }
+
+    #[test]
+    fn generating_a_board_with_5_removed() {
+        let mut game = Game::full();
+        game.empty(20);
+        let mut count = 0;
+        for n in game.numbers.iter() {
+            if n.is_none() {
+                count += 1;
+            }
+        }
+
+        assert_eq!(count, 20);
+        // for n in 1..10 {
+        //     println!("--{}", n);
+        //     for _ in 0..50 {
+        //         let mut game = Game::full();
+        //         let instant = std::time::Instant::now();
+        //         game.empty(n);
+        //         println!("{:?}", instant.elapsed());
+        //     }
+        // }
     }
 }
