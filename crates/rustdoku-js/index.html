@@ -1,0 +1,63 @@
+<html>
+
+<head></head>
+
+<body>
+  <button onclick="runWasm()">Run WebAssembly</button>
+  <button onclick="runJS()">Run JavaScript</button>
+
+  <script src="./pkg/rustdoku_js.js"></script>
+  <script src="./javascript-version.js"></script>
+  <script>
+    const n = 25
+    function generateWasm(n) {
+      const { Game } = wasm_bindgen;
+      return new Game(n)
+    }
+
+    function runWasm() {
+      const times = Array()
+      for (let i = 0; i < n; i++) {
+        const t1 = performance.now();
+        generateWasm(50)
+        const t2 = performance.now();
+        // const game = Game.newHard()
+        times.push(t2 - t1)
+      }
+
+      console.log("Avg: ", times.reduce((x, y) => x + y) / n)
+      alert("Done")
+    }
+
+    function runJS() {
+      const times = Array()
+      for (let i = 0; i < n; i++) {
+        const t1 = performance.now();
+        generateJs(50)
+        const t2 = performance.now();
+        // const board = newBoard()
+        // const t1 = performance.now();
+        // solve(board)
+        // const t2 = performance.now();
+        const timing = t2 - t1
+        times.push(timing)
+      }
+      let total = 0;
+      for (let t of times) {
+        total += t
+      }
+
+      console.log("Avg: ", total / n)
+      alert("Done")
+    }
+
+    async function setUp() {
+      await wasm_bindgen('./pkg/rustdoku_js_bg.wasm');
+    }
+
+    setUp()
+
+  </script>
+</body>
+
+</html>

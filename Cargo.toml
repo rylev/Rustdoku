@@ -2,6 +2,17 @@
 name = "sudoku"
 version = "0.1.0"
 authors = ["Ryan Levick <ryan.levick@gmail.com>"]
+edition = "2018"
 
-[dependencies]
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "rustdoku"
+path = "src/main.rs"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "0.3.17"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rand = "0.5"
