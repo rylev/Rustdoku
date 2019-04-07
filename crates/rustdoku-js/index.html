@@ -1,19 +1,20 @@
 <html>
 
-<head></head>
+<head>
+
+  <link rel="stylesheet" type="text/css" href="./index.css">
+</head>
 
 <body>
-  <button onclick="runWasm()">Run WebAssembly</button>
-  <button onclick="runJS()">Run JavaScript</button>
+  <div id="container">
+    <board :board="board"></board>
+  </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
   <script src="./pkg/rustdoku_js.js"></script>
   <script src="./javascript-version.js"></script>
+  <script src="./index.js"></script>
   <script>
-    const n = 25
-    function generateWasm(n) {
-      const { Game } = wasm_bindgen;
-      return new Game(n)
-    }
 
     function runWasm() {
       const times = Array()
@@ -50,13 +51,6 @@
       console.log("Avg: ", total / n)
       alert("Done")
     }
-
-    async function setUp() {
-      await wasm_bindgen('./pkg/rustdoku_js_bg.wasm');
-    }
-
-    setUp()
-
   </script>
 </body>
 

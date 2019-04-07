@@ -9,6 +9,7 @@ pub struct Game {
 impl Game {
     #[wasm_bindgen(constructor)]
     pub fn new(count_missing: u8) -> Game {
+        console_error_panic_hook::set_once();
         let mut game = Game::new_full();
         game.empty(count_missing);
         game
@@ -98,15 +99,31 @@ impl Game {
         t2 - t1
     }
 
-    #[wasm_bindgen(js_name = toJs)]
-    pub fn to_js(&self) -> Vec<wasm_bindgen::JsValue> {
+    #[wasm_bindgen]
+    pub fn squares(&self) -> Vec<wasm_bindgen::JsValue> {
         self.inner
-            .numbers
+            .squares()
             .iter()
-            .map(|n| match n {
-                None => wasm_bindgen::JsValue::UNDEFINED,
-                Some(n) => wasm_bindgen::JsValue::from_f64(*n as f64),
+            .map(|s| {
+                let array = js_sys::Array::new();
+                let vec: Vec<_> = s.iter().map(Self::cell_to_js).collect();
+                for item in vec {
+                    array.push(&item);
+                }
+                array.into()
             })
             .collect()
+    }
+
+    #[wasm_bindgen(js_name = toJs)]
+    pub fn to_js(&self) -> Vec<wasm_bindgen::JsValue> {
+        self.inner.numbers.iter().map(Self::cell_to_js).collect()
+    }
+
+    fn cell_to_js(cell: &Option<u8>) -> wasm_bindgen::JsValue {
+        match cell {
+            &None => wasm_bindgen::JsValue::UNDEFINED,
+            &Some(n) => wasm_bindgen::JsValue::from_f64(n as f64),
+        }
     }
 }

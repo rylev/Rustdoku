@@ -1,0 +1,17 @@
+.cell {
+  width: 15px;
+  height: 15px;
+  text-align: center;
+  border: solid 1px black;
+  padding: 1px;
+}
+
+.square {
+  border: solid 1px black;
+}
+
+.board {
+  border: solid 1px black;
+
+  width: 177px;
+}

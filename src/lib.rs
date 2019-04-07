@@ -35,7 +35,6 @@ impl Game {
                     } else {
                         tries += 1;
                         if tries > 100 {
-                            panic!("");
                             break;
                         }
                     }
@@ -186,6 +185,16 @@ impl Game {
         }
 
         coll
+    }
+
+    pub fn squares(&self) -> [[Option<u8>; 9]; 9] {
+        let mut squares = [[None; 9]; 9];
+        for square_index in 0..9 {
+            let square = self.square(square_index);
+            squares[square_index as usize] = square;
+        }
+
+        squares
     }
 }
 
