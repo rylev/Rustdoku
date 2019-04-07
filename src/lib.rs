@@ -29,7 +29,9 @@ impl Game {
                 if let Some(original) = self.numbers[index] {
                     clone1.numbers[index] = None;
                     clone2.numbers[index] = None;
-                    if !clone1.solve_with_condition((index as u8, original)) && clone2.solve() {
+                    let (solved1, _) = clone1.solve_with_condition((index as u8, original)) ;
+                    let (solved2, _) = clone2.solve();
+                    if !solved1 && solved2 {
                         self.numbers[index] = None;
                         break;
                     } else {
@@ -62,17 +64,17 @@ impl Game {
         Some(Game::new(numbers))
     }
 
-    pub fn solve(&mut self) -> bool {
-        self.check(0, None)
+    pub fn solve(&mut self) -> (bool, usize) {
+        self.check(0, 0, None)
     }
 
-    pub fn solve_with_condition(&mut self, forbidden: (u8, u8)) -> bool {
-        self.check(0, Some(forbidden))
+    pub fn solve_with_condition(&mut self, forbidden: (u8, u8)) -> (bool, usize) {
+        self.check(0, 0, Some(forbidden))
     }
 
-    fn check(&mut self, index: u8, forbidden: Option<(u8, u8)>) -> bool {
+    fn check(&mut self, index: u8, mut steps: usize, forbidden: Option<(u8, u8)>) -> (bool, usize) {
         if index > 80 {
-            return true;
+            return (true, steps);
         }
 
         let mut rng = random::Rng::new();
@@ -96,8 +98,10 @@ impl Game {
             if is_possible {
                 if is_not_forbidden {
                     self.numbers[index as usize] = Some(value);
-                    if self.check(index + 1, forbidden) {
-                        return true;
+                    let (worked, new_steps) =self.check(index + 1, steps + 1, forbidden) ;
+                    steps = new_steps;
+                    if worked {
+                        return (true, steps);
                     }
                 }
                 possible_values[i] = false;
@@ -105,7 +109,7 @@ impl Game {
         }
 
         self.numbers[index as usize] = original;
-        false
+        (false, steps)
     }
 
     // Returns an array of size 9 where if the value at index i is true then i

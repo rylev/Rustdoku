@@ -6,9 +6,34 @@ function generateWasm(n) {
   const { Game } = wasm_bindgen;
   return new Game(n)
 }
+
 Vue.component('cell', {
   props: ['data'],
-  template: `<div class="cell">{{data}}</div>`
+  template: `
+    <div v-if="editing" class="cell"><input class="input" type="number" @blur="submit" @keydown="keydown"></div>
+    <div v-else="editing" class="cell" @click="editMode">{{data}}</div>
+  `,
+  data() {
+    return {
+      editing: false
+    }
+  },
+  methods: {
+    editMode() {
+      if (!this.data) {
+        this.editing = true
+      }
+    },
+    submit(e) {
+      console.log(e)
+    },
+    keydown(e) {
+      let value = e.target.value
+      if ((value.length >= 1 && e.key !== "Backspace") || e.key === "0") {
+        e.preventDefault()
+      }
+    },
+  }
 })
 
 Vue.component('cellRow', {
@@ -64,6 +89,32 @@ Vue.component('board', {
         rows[i % 3].push(square)
       }
       return rows
+    }
+  }
+})
+
+Vue.component('playarea', {
+  props: ['board'],
+  template: `
+    <div class="playarea">
+      <board :board="foo"></board>
+      <button @click="solve">Solve</button>
+      <button @click="generateNew">Generate New</button>
+    </div>
+  `,
+  methods: {
+    solve() {
+      const result = this.foo.solve()
+      Vue.set(this, 'foo', result.game());
+    },
+    generateNew() {
+      const newBoard = generateWasm(25)
+      Vue.set(this, 'foo', newBoard);
+    }
+  },
+  data() {
+    return {
+      foo: this.board
     }
   }
 })

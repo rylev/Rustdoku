@@ -1,8 +1,24 @@
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+#[derive(Clone)]
 pub struct Game {
     inner: sudoku::Game,
+}
+
+#[wasm_bindgen]
+pub struct SolveResult {
+    game: Game,
+    steps: usize,
+}
+#[wasm_bindgen]
+impl SolveResult {
+    pub fn game(&self) -> Game {
+        self.game.clone()
+    }
+    pub fn steps(&self) -> usize {
+        self.steps
+    }
 }
 
 #[wasm_bindgen]
@@ -18,7 +34,8 @@ impl Game {
     #[wasm_bindgen(js_name = newFull)]
     pub fn new_full() -> Game {
         let mut game = sudoku::Game::new([None; 81]);
-        assert!(game.solve());
+        let (solved, _) = game.solve();
+        assert!(solved);
         Game { inner: game }
     }
 
@@ -91,12 +108,17 @@ impl Game {
         self.inner.empty(count)
     }
 
-    pub fn solve(&mut self) -> f64 {
-        let t1 = web_sys::window().unwrap().performance().unwrap().now();
-        self.inner.solve();
-        let t2 = web_sys::window().unwrap().performance().unwrap().now();
+    pub fn solve(&mut self) -> SolveResult {
+        let clone = Game {
+            inner: self.inner.clone(),
+        };
+        let (_, steps) = self.inner.solve();
+        let solved = std::mem::replace(self, clone);
 
-        t2 - t1
+        SolveResult {
+            game: solved,
+            steps,
+        }
     }
 
     #[wasm_bindgen]
