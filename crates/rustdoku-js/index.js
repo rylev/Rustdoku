@@ -94,27 +94,68 @@ Vue.component('board', {
 })
 
 Vue.component('playarea', {
-  props: ['board'],
+  props: ['initialBoard'],
   template: `
     <div class="playarea">
-      <board :board="foo"></board>
-      <button @click="solve">Solve</button>
-      <button @click="generateNew">Generate New</button>
+      <board :board="board"></board>
+      <div class="button solve" @click="solve">Solve</div>
+      <div class="button new" @click="generateNewWasm">Generate New With Wasm</div>
+      <div class="button new" @click="generateNewJS">Generate New With Wasm</div>
     </div>
   `,
   methods: {
     solve() {
-      const result = this.foo.solve()
-      Vue.set(this, 'foo', result.game());
+      const result = this.board.solve()
+      Vue.set(this, 'board', result.game());
     },
-    generateNew() {
-      const newBoard = generateWasm(25)
-      Vue.set(this, 'foo', newBoard);
+    generateNewJs() {
+      const totalBoards = 5
+      const totalRuns = 5
+
+      let best = undefined
+      let mostSteps = 0
+      for (let numberOfBlanks = 45; numberOfBlanks < 50; numberOfBlanks++) {
+        for (let boardCount = 0; boardCount < totalBoards; boardCount++) {
+          const newBoard = generateJs(numberOfBlanks)
+          let total = 0
+          for (let run = 0; run < totalRuns; run++) {
+            total += newBoard
+          }
+          const avg = total / 5
+          if (mostSteps < avg) {
+            best = newBoard
+            mostSteps = avg
+          }
+        }
+      }
+      Vue.set(this, 'board', best);
+    },
+    generateNewWasm() {
+      const totalBoards = 5
+      const totalRuns = 5
+
+      let best = undefined
+      let mostSteps = 0
+      for (let numberOfBlanks = 45; numberOfBlanks < 50; numberOfBlanks++) {
+        for (let boardCount = 0; boardCount < totalBoards; boardCount++) {
+          const newBoard = generateWasm(numberOfBlanks)
+          let total = 0
+          for (let run = 0; run < totalRuns; run++) {
+            total += newBoard.solve().steps()
+          }
+          const avg = total / 5
+          if (mostSteps < avg) {
+            best = newBoard
+            mostSteps = avg
+          }
+        }
+      }
+      Vue.set(this, 'board', best);
     }
   },
   data() {
     return {
-      foo: this.board
+      board: this.initialBoard
     }
   }
 })
