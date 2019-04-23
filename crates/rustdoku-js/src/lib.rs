@@ -26,9 +26,12 @@ impl Game {
     #[wasm_bindgen(constructor)]
     pub fn new(count_missing: u8) -> Game {
         console_error_panic_hook::set_once();
-        let mut game = Game::new_full();
-        game.empty(count_missing);
-        game
+        loop {
+            let mut game = Game::new_full();
+            if game.empty(count_missing) {
+                return game;
+            }
+        }
     }
 
     #[wasm_bindgen(js_name = avgSteps)]
@@ -122,7 +125,7 @@ impl Game {
         Game { inner }
     }
 
-    pub fn empty(&mut self, count: u8) {
+    pub fn empty(&mut self, count: u8) -> bool {
         self.inner.empty(count)
     }
 

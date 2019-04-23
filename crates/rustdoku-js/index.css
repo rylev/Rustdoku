@@ -1,34 +1,62 @@
+#container {
+    display: flex;
+    justify-content: center;
+}
+
+.playarea {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.button {
+    background-color: #4CAF50;
+    border-radius: 5px;
+    width: 50px;
+    margin: 5px;
+    color: white;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+}
+
 .cell {
-  width: 15px;
-  height: 15px;
-  text-align: center;
-  border: solid 1px black;
-  padding: 1px;
+    width: 15px;
+    height: 15px;
+    text-align: center;
+    border: solid 1px black;
+    padding: 1px;
 }
 
 .square {
-  border: solid 1px black;
+    border: solid 1px black;
 }
 
 .board {
-  border: solid 1px black;
-
-  width: 177px;
+    border: solid 1px black;
+    width: 177px;
 }
 
 .input {
-  width: 15px;
-  height: 15px;
+    width: 15px;
+    height: 15px;
 }
 
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
-  -webkit-appearance: none; 
-  margin: 0; 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
-input { 
-  outline: none; 
-  text-align: center;
-  box-shadow: none !important; 
+input {
+    outline: none;
+    text-align: center;
+    box-shadow: none !important;
 }
