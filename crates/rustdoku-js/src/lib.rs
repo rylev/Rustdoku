@@ -31,6 +31,24 @@ impl Game {
         game
     }
 
+    #[wasm_bindgen(js_name = avgSteps)]
+    pub fn avg_steps(&mut self, runs: usize) -> f64 {
+        (0..runs).map(|_| self.solve().steps).sum::<usize>() as f64 / runs as f64
+    }
+
+    pub fn from(numbers: Vec<JsValue>) -> Game {
+        console_error_panic_hook::set_once();
+        let mut result = [None; 81];
+        for (i, v) in numbers.iter().take(81).enumerate() {
+            if !v.is_undefined() {
+                result[i] = Some(v.as_f64().unwrap() as u8);
+            }
+        }
+        Game {
+            inner: sudoku::Game { numbers: result },
+        }
+    }
+
     #[wasm_bindgen(js_name = newFull)]
     pub fn new_full() -> Game {
         let mut game = sudoku::Game::new([None; 81]);

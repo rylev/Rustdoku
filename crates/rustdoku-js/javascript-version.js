@@ -9,6 +9,10 @@ function full() {
   return board
 }
 
+function clone(board) {
+  return board.slice(0)
+}
+
 function remove(board, n) {
   for (let i = 0; i < n; i++) {
     let tries = 0
@@ -21,14 +25,14 @@ function remove(board, n) {
         clone1[index] = undefined
         clone2[index] = undefined
         const condition = [index, original]
-        const withCondition = solve(clone1, condition)
-        const withoutCondition = solve(clone2)
+        const [withCondition, steps1] = solve(clone1, condition)
+        const [withoutCondition, steps2] = solve(clone2)
         if (!withCondition && withoutCondition) {
           board[index] = undefined
           break
         } else {
           tries++
-          if (tries >= 1000) {
+          if (tries >= 10000) {
             throw toString(clone1)
           }
         }
@@ -39,11 +43,11 @@ function remove(board, n) {
 
 }
 function solve(board, condition) {
-  return check(board, 0, condition)
+  return check(board, 0, 0, condition)
 }
 
-function check(board, index, condition) {
-  if (index > 80) { return true }
+function check(board, index, steps, condition) {
+  if (index > 80) { return [true, steps] }
 
   const original = board[index]
   const possibleValues = getPossibleValues(board, index)
@@ -63,8 +67,10 @@ function check(board, index, condition) {
 
     if (!is_forbidden) {
       board[index] = value;
-      if (check(board, index + 1, condition)) {
-        return true
+      const [succeeded, newSteps] = check(board, index + 1, steps + 1, condition)
+      steps = newSteps
+      if (succeeded) {
+        return [true, steps]
       }
     }
 
@@ -72,7 +78,7 @@ function check(board, index, condition) {
   }
 
   board[index] = original
-  return false
+  return [false, steps]
 }
 
 function getPossibleValues(board, index) {

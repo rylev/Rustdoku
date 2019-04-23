@@ -14,44 +14,6 @@
   <script src="./pkg/rustdoku_js.js"></script>
   <script src="./javascript-version.js"></script>
   <script src="./index.js"></script>
-  <script>
-
-    function runWasm() {
-      const times = Array()
-      for (let i = 0; i < n; i++) {
-        const t1 = performance.now();
-        generateWasm(50)
-        const t2 = performance.now();
-        // const game = Game.newHard()
-        times.push(t2 - t1)
-      }
-
-      console.log("Avg: ", times.reduce((x, y) => x + y) / n)
-      alert("Done")
-    }
-
-    function runJS() {
-      const times = Array()
-      for (let i = 0; i < n; i++) {
-        const t1 = performance.now();
-        generateJs(50)
-        const t2 = performance.now();
-        // const board = newBoard()
-        // const t1 = performance.now();
-        // solve(board)
-        // const t2 = performance.now();
-        const timing = t2 - t1
-        times.push(timing)
-      }
-      let total = 0;
-      for (let t of times) {
-        total += t
-      }
-
-      console.log("Avg: ", total / n)
-      alert("Done")
-    }
-  </script>
 </body>
 
 </html>

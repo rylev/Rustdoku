@@ -93,6 +93,9 @@ Vue.component('board', {
   }
 })
 
+const totalBoards = 30
+const totalRuns = 30
+const numberOfBlanks = 51
 Vue.component('playarea', {
   props: ['initialBoard'],
   template: `
@@ -100,7 +103,7 @@ Vue.component('playarea', {
       <board :board="board"></board>
       <div class="button solve" @click="solve">Solve</div>
       <div class="button new" @click="generateNewWasm">Generate New With Wasm</div>
-      <div class="button new" @click="generateNewJS">Generate New With Wasm</div>
+      <div class="button new" @click="generateNewJS">Generate New With JS</div>
     </div>
   `,
   methods: {
@@ -108,49 +111,42 @@ Vue.component('playarea', {
       const result = this.board.solve()
       Vue.set(this, 'board', result.game());
     },
-    generateNewJs() {
-      const totalBoards = 5
-      const totalRuns = 5
+    generateNewJS() {
+      const t1 = performance.now()
 
-      let best = undefined
-      let mostSteps = 0
-      for (let numberOfBlanks = 45; numberOfBlanks < 50; numberOfBlanks++) {
-        for (let boardCount = 0; boardCount < totalBoards; boardCount++) {
-          const newBoard = generateJs(numberOfBlanks)
-          let total = 0
-          for (let run = 0; run < totalRuns; run++) {
-            total += newBoard
-          }
-          const avg = total / 5
-          if (mostSteps < avg) {
-            best = newBoard
-            mostSteps = avg
-          }
-        }
-      }
-      Vue.set(this, 'board', best);
+      const newBoard = generateJs(70)
+      // const avgs = []
+      // for (let boardCount = 0; boardCount < totalBoards; boardCount++) {
+      //   const newBoard = generateJs(numberOfBlanks)
+      //   let total = 0
+      //   for (let run = 0; run < totalRuns; run++) {
+      //     total += solve(clone(newBoard))[0]
+      //   }
+      //   avgs.push([newBoard, total / totalRuns])
+      // }
+      const t2 = performance.now()
+
+      // const best = avgs.sort((x, y) => x[1] - y[1])[0][0]
+      console.log("JS: ", t2 - t1)
+      const { Game } = wasm_bindgen;
+      Vue.set(this, 'board', Game.from(newBoard));
     },
     generateNewWasm() {
-      const totalBoards = 5
-      const totalRuns = 5
+      const t1 = performance.now()
 
-      let best = undefined
-      let mostSteps = 0
-      for (let numberOfBlanks = 45; numberOfBlanks < 50; numberOfBlanks++) {
-        for (let boardCount = 0; boardCount < totalBoards; boardCount++) {
-          const newBoard = generateWasm(numberOfBlanks)
-          let total = 0
-          for (let run = 0; run < totalRuns; run++) {
-            total += newBoard.solve().steps()
-          }
-          const avg = total / 5
-          if (mostSteps < avg) {
-            best = newBoard
-            mostSteps = avg
-          }
-        }
-      }
-      Vue.set(this, 'board', best);
+      // const avgs = []
+      // for (let boardCount = 0; boardCount < totalBoards; boardCount++) {
+      //   const newBoard = generateWasm(numberOfBlanks)
+      //   const avg = newBoard.avgSteps(totalRuns)
+      //   avgs.push([newBoard, avg])
+      // }
+      const newBoard = generateWasm(70)
+
+      const t2 = performance.now()
+      // const best = avgs.sort((x, y) => x[1] - y[1])[0][0]
+
+      console.log("Wasm: ", t2 - t1)
+      Vue.set(this, 'board', newBoard);
     }
   },
   data() {
